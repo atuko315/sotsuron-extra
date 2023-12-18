@@ -31,16 +31,20 @@
             [0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0]
         ];
+        /*対局、振り返りトータルで七分　強くなることが目標　設定は途中で変えても良い　終わったあとバツではなく終了ボタンを押す*/
+        /*valueは-1から１*/
+        /*帰る前にファイルアップロード*/
         var traj_number = 0;
         var traj_size = 0;
         var trajs = [];
         var analist = -1;
-        var name = 0; // 被験者idを入れてください
+        var name = 11; // 被験者idを入れてください
         var day = 1; // 練習何日目か
-        var turns = [0, 0, 0]; //1が強いAI、−１が弱いAI,[後ろ番, 0, 先番]の順
-        var method = [1, 1]; // 1が提案手法　2が既存手法
-        var limit = 100; // 分岐を見るときに何手までみるか 下の選択肢から選択
-        // limits = [3, 5, 10, 100]
+        var turns = [0, 0, -1]; //1が強いAI、−１が弱いAI,[先番, 0, 後ろ番]の順
+        var method = [1, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
+
+        var limit = 3;
+        // limits = [3, 5, 7, 100]
         var times = [];
         var choices = [];
         var player = 1;
@@ -447,8 +451,10 @@
                 }
                 renderBoard(board, cell_class, fatal, data.text); // ボードを再描画
                
+                if(result == 0){
+                    addClickHandlers();
+                }
                 
-                addClickHandlers();
 
             });
         }
@@ -482,13 +488,16 @@
                     });
                     player = 1;
                     startFeedback()
+                }else{
+                    addClickHandlers();
                 }
-                // ボードを再描画
+            
                 
-                addClickHandlers();
+                
             });
             
         }
+        
 
         function addClickHandlers() {
 
@@ -751,8 +760,8 @@
                 ctext = null;
                 cfatal = null;
                 EndFeedback()
-                createButton("forward", forwardOne);
-                createButton("back", backOne);
+                createButton("<<", backOne);
+                createButton(">>", forwardOne);                
                 createButton("normal", bactToNormal)
                 //createButton("traj", showTraj);
                 createButton("traj", startTrajMode);
