@@ -39,9 +39,9 @@
         var trajs = [];
         var analist = -1;
         var name = 11; // 被験者idを入れてください
-        var day = 1; // 練習何日目か
-        var turns = [0, 0, -1]; //1が強いAI、−１が弱いAI,[先番, 0, 後ろ番]の順
-        var method = [1, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
+        var day = 2; // 練習何日目か
+        var turns = [0, 0, -1]; //先番固定　1が強いAI、−１が弱いAI,[先番, 0, 後ろ番]の順
+        var method = [2, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
 
         var limit = 3;
         // limits = [3, 5, 7, 100]
@@ -58,6 +58,7 @@
         
         var ctext = null;
         var cfatal = null;
+        var message = "";
 
         var start_time = 0;
         var end_time = 0;
@@ -564,47 +565,56 @@
                 // 例: 更新されたボードを表示
                 valids = data.valids; // サーバーからのデータでboard変数を更新
                 ranks = data.ranks;
+                count = data.counts;
+                best = ranks.indexOf(0);
+                worst = ranks.indexOf(ranks.length-1);
+                pick = [best, worst];
                 endTrajs();
-                createButton("close traj mode", EndTrajMode)
                 times.push(-2)
                 times.push( data['my_importance'])
                 times.push(data['importance'])
                 
                 console.log(times)
                 var buttonContainer = document.getElementById("button-container");
-                for (  var i = 0;  i < valids.length;  i++  ) {
+                for (  var i = 0;  i < 2;  i++  ) {
 
-                    action = valids[i];
+                    action = pick[i];
+                    if(i==0){
+                        label = "best: " + String(action+1);
+                    }else{
+                        label = "worst: " + String(action+1);
+                    }
                     
                    
                     //console.log("create")
                     var button = document.createElement("button");
                     button.className = "button-sub"
                     button.id = String(action);
-                    button.innerText = String(action+1);
-                    button.onclick = function(innerText) {
+                    button.innerText = label;
+                    button.onclick = function(id) {
                         return function(event) {
                             endTrajs();
                             event.preventDefault(); // デフォルトのイベントをキャンセル
                             //console.log("button");
                             //console.log(innerText);
+                            a = Number(id)
                             
                             cend = performance.now();
                             //　二度押しはクリックミスとみなす
                             
-                            choices.push( cend-cstart, -2, ranks[Number(innerText)-1]);
+                            choices.push( cend-cstart, -2, ranks[a]);
                             console.log(choices)
                             cstart = cend;
                             
                             if(method[0]==1){
-                                MyHotTraj(Number(innerText)-1);
+                                MyHotTraj(a,count);
                             }else{
-                                HotTraj(Number(innerText)-1);
+                                HotTraj(a, count);
                             }
                             //MyHotTraj(Number(innerText));
                             //HotTraj(Number(innerText));
                         };
-                    }(button.innerText);
+                    }(button.id);
                     buttonContainer.appendChild(button);
                     cflag = true;
                     cstart = performance.now();
@@ -614,7 +624,7 @@
                 });
             
         }
-        function HotTraj(action){
+        function HotTraj(action, count){
             fetch('/hot_traj', {
                 method: 'POST',
                 headers: {
@@ -637,14 +647,16 @@
                 }else{
                     turn = -1
                 }
-                showMessage(String(turn*curPlayer*data.value))
+                tmessage = "counts: "+ String(count) + " value: " +  String(turn*curPlayer*data.value)
+                showMessage(tmessage);
+                
 
                 renderTraj(fboard, text, fatal, tail, cell_class, win);
                 
                 
             });
         }
-        function MyHotTraj(action){
+        function MyHotTraj(action, count){
             fetch('/my_hot_traj', {
                 method: 'POST',
                 headers: {
@@ -670,7 +682,8 @@
                 }else{
                     turn = -1
                 }
-                showMessage(String(turn*curPlayer*data.value))
+                tmessage = "counts: "+ String(count) + " value: " +  String(turn*curPlayer*data.value)
+                showMessage(tmessage);
                 renderTraj(fboard, text, fatal, tail, cell_class, win);
                 
                 multiTraj();
@@ -764,7 +777,7 @@
                 createButton(">>", forwardOne);                
                 createButton("normal", bactToNormal)
                 //createButton("traj", showTraj);
-                createButton("traj", startTrajMode);
+                //createButton("traj", startTrajMode);
                 //createButton("vec", showVec);
                 /*
                 if (method[1] == 1){
@@ -784,10 +797,10 @@
                     turn = -1
                 }
                 curPlayer = getStep(board)
-                
-                showMessage("counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value));
+                message = "counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value)
+                showMessage(message);
                 times.push(-2)
-                
+                startTrajMode()               
             });
            
             
@@ -795,8 +808,8 @@
         function EndFeedback(){
             endTrajs();
             EndTrajMode();
-            removeButton("forward");
-            removeButton("back");
+            removeButton(">>");
+            removeButton("<<");
             removeButton("normal")
             removeButton("traj");
             removeButton("vec");
@@ -818,11 +831,9 @@
             }
             
             endTrajs();
-            for(var i = 0; i < 7; i++ ){
-                removeButton(String(i+1));
-            }
-            removeButton("traj mode");
-            removeButton("close traj mode")
+            removeVague("best");
+            removeVague("worst");
+            
         }
 
         function createButton(text, onclick){
@@ -845,6 +856,22 @@
 
                 // テキストに一致するか確認
                 if (button.innerText === text) {
+                   
+                    // 一致したら削除
+                    buttonContainer.removeChild(button);
+                    return;  // 一致したら処理終了
+                }
+            }
+        }
+        function removeVague(text){
+            var buttonContainer = document.getElementById("button-container")
+            var buttons = buttonContainer.childNodes;
+            // 子要素から指定されたテキストに一致するものを探す
+            for (var i = 0; i < buttons.length; i++) {
+                var button = buttons[i];
+
+                // テキストに一致するか確認
+                if (button.innerText.indexOf(text) !== -1) {
                    
                     // 一致したら削除
                     buttonContainer.removeChild(button);
@@ -875,8 +902,9 @@
                     turn = -1
                 }
                 curPlayer = getStep(board)
-                
-                showMessage("counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value));
+                message = "counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value)
+                showMessage(message);
+                startTrajMode() 
             });
 
         }
@@ -903,13 +931,15 @@
                     turn = -1
                 }
                 curPlayer = getStep(board)
-                showMessage("counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value));
+                message = "counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value)
+                showMessage(message);
+                startTrajMode()
             });
             
         }
         function bactToNormal(){
-            EndTrajMode()
             renderBoard(board, cell_class);
+            showMessage(message);
         }
         function getStep(fboard){
             step = 0

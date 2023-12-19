@@ -87,6 +87,18 @@ def update_board():
     if result == 0 and  getStep(next_board) < 42:
         top = np.where(board[:, action] != 0)[0][0]
         text[top][action] = 0
+    else:
+        memory.append([board.copy(), system.s_mcts.Nsa.copy(), system.b_mcts.Nsa.copy(), None, None, system.s_mcts.V.copy(), system.b_mcts.V.copy(), None, None])
+        s_value = get_past_value(board, getStep(board), analist=1)
+        b_value = get_past_value(board, getStep(board), analist=-1)
+        memory[-1][3] = s_value
+        print(memory[getStep(board)][3])
+        memory[-1][4] = b_value
+        simp = getMyImportance(board, getStep(board), analist=1)
+        
+        wimp = getMyImportance(board, getStep(board), analist=-1)
+        memory[-1][7] = simp
+        memory[-1][8] = wimp
 
     # ボードを更新
     # 例: board = updated_board
@@ -165,6 +177,18 @@ def turn_of_AI():
     if result == 0 and  getStep(next_board) < 42:
         top = np.where(board[:, action] != 0)[0][0]
         text[top][action] = 0
+    else:
+        memory.append([board.copy(), system.s_mcts.Nsa.copy(), system.b_mcts.Nsa.copy(), None, None, system.s_mcts.V.copy(), system.b_mcts.V.copy(), None, None])
+        s_value = get_past_value(board, getStep(board), analist=1)
+        b_value = get_past_value(board, getStep(board), analist=-1)
+        memory[-1][3] = s_value
+        print(memory[getStep(board)][3])
+        memory[-1][4] = b_value
+        simp = getMyImportance(board, getStep(board), analist=1)
+        
+        wimp = getMyImportance(board, getStep(board), analist=-1)
+        memory[-1][7] = simp
+        memory[-1][8] = wimp
     response_data = {
         'updatedBoard': board.tolist(),
         'gameResult': result,
@@ -405,8 +429,8 @@ def get_valids():
     valids = [i  for i in range(len(valids)) if valids[i]]
     analist = data['analist']
     counts = getPastCount(getStep(fboard), fboard, analist)
-    ranks = (np.argsort(counts)[::-1]).tolist()
-    ranks = [ranks.index(x) for x in range(7)]
+    ranks = (np.argsort(counts)[::-1]).tolist() #降順
+    ranks = [ranks.index(x)  for x in valids]
     print(counts, ranks)
     my_importance = getMyImportance(fboard, getStep(fboard), analist)
     importance = getImportance(fboard, getStep(fboard), analist)
@@ -415,6 +439,7 @@ def get_valids():
         'my_importance': my_importance,
         'importance': importance,
         'ranks': ranks,
+        'counts': counts,
 
     }
     return jsonify(response_data)
