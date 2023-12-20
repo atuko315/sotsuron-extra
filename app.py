@@ -430,8 +430,10 @@ def get_valids():
     analist = data['analist']
     counts = getPastCount(getStep(fboard), fboard, analist)
     ranks = (np.argsort(counts)[::-1]).tolist() #降順
-    ranks = [ranks.index(x)  for x in valids]
-    print(counts, ranks)
+    ranks = [ranks.index(x) for x in range(len(ranks))]
+    tmp = [x if x in valids else -1 for x in ranks]
+    worst = tmp[np.argmax(tmp)]
+    print(valids, counts, ranks, tmp, worst)
     my_importance = getMyImportance(fboard, getStep(fboard), analist)
     importance = getImportance(fboard, getStep(fboard), analist)
     response_data = {
@@ -440,6 +442,7 @@ def get_valids():
         'importance': importance,
         'ranks': ranks,
         'counts': counts,
+        'worst': int(worst),
 
     }
     return jsonify(response_data)
