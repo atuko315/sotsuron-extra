@@ -133,7 +133,19 @@
             }
             if (name <= 4){
                 limit=3
+            }else if(name <= 8){
+                limit=5
+            }else if(name <= 12){
+                limit=7
+            }else if(name <= 16){
+                limit=100
             }
+
+            if( (name%4==1) || (name%4==2)){
+                turns[2] = 1
+            }else{
+                turns[2] = -1
+            } 
         }
         function setBoardToOnes() {
             // ボードの全ての要素を1に変更
