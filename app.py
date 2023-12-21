@@ -436,7 +436,7 @@ def get_valids():
     counts = getPastCount(getStep(fboard), fboard, analist)
     ranks = (np.argsort(counts)[::-1]).tolist() #降順
     ranks = [ranks.index(x) for x in range(len(ranks))]
-    tmp = [x if x in valids else -1 for x in ranks]
+    tmp = [ranks[i] if i in valids else -1 for i in range(len(ranks))]
     worst = np.argmax(tmp)
     print(valids, counts, ranks, tmp, worst)
     my_importance = getMyImportance(fboard, getStep(fboard), analist)
