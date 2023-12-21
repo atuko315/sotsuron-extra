@@ -233,9 +233,14 @@ def reset():
 def start_feedack(analist=1):
     data = request.get_json()
     analist = data['analist']
-    importances = [x[7] for x in memory] if analist==1 else [x[8] for x in memory]
+  
+    human = 0 
+    importances = [memory[i][7] if i%2 == human else 0 for i in range(len(memory))] if analist==1 else [memory[i][8] if i%2 == human else 0 for i in range(len(memory))]
     print(importances)
+    
     most_important = np.argsort(np.array(importances))[-1]
+    
+    
     fboard = memory[most_important][0]
     count = getPastCount(getStep(fboard), fboard, analist)
     value = memory[getStep(fboard)][3] if analist == 1 else memory[getStep(fboard)][4]
@@ -432,7 +437,7 @@ def get_valids():
     ranks = (np.argsort(counts)[::-1]).tolist() #降順
     ranks = [ranks.index(x) for x in range(len(ranks))]
     tmp = [x if x in valids else -1 for x in ranks]
-    worst = tmp[np.argmax(tmp)]
+    worst = np.argmax(tmp)
     print(valids, counts, ranks, tmp, worst)
     my_importance = getMyImportance(fboard, getStep(fboard), analist)
     importance = getImportance(fboard, getStep(fboard), analist)
