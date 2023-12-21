@@ -38,10 +38,10 @@
         var traj_size = 0;
         var trajs = [];
         var analist = -1;
-        var name = 8; // 被験者idを入れてください
+        var name = 1; // 被験者idを入れてください
         var day = 2; // 練習何日目か
         var turns = [0, 0, -1]; //先番固定　1が強いAI、−１が弱いAI,[先番, 0, 後ろ番]の順
-        var method = [2, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
+        var method = [1, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
 
         var limit = 5;
         // limits = [3, 5, 7, 100]
@@ -112,6 +112,13 @@
         }
         function set_player(){
             player = 1
+            if( (name%4==1) || (name%4==2)){
+                turns[2] = 1
+                turns[0] = 0
+            }else{
+                turns[2] = -1
+                turns[0] = 0
+            } 
             if ((turns[0] == 0)){
                 if(turns[2] == 1){
                     analist = 1
@@ -141,11 +148,7 @@
                 limit=100
             }
 
-            if( (name%4==1) || (name%4==2)){
-                turns[2] = 1
-            }else{
-                turns[2] = -1
-            } 
+            
         }
         function setBoardToOnes() {
             // ボードの全ての要素を1に変更
@@ -795,7 +798,7 @@
                 EndFeedback()
                 createButton("<<", backOne);
                 createButton(">>", forwardOne);                
-                createButton("normal", bactToNormal)
+                
                 //createButton("traj", showTraj);
                 //createButton("traj", startTrajMode);
                 //createButton("vec", showVec);
@@ -820,7 +823,8 @@
                 message = "counts: "+ String(counts) + " value: " +  String(turn*curPlayer*data.value)
                 showMessage(message);
                 times.push(-2)
-                startTrajMode()               
+                startTrajMode()         
+                createButton("normal", bactToNormal)      
             });
            
             
