@@ -82,9 +82,22 @@ def update_board():
     board = np.array(next_board, dtype=np.int32) # クライアントからのデータを受け取り
     print(board)
     
-    print(fatal)
+    #print(fatal)
     text = [[ -1 for _ in range(7)] for _ in range(6)]
     if result == 0 and  getStep(next_board) < 42:
+        '''
+        memory.append([board.copy(), system.s_mcts.Nsa.copy(), system.b_mcts.Nsa.copy(), None, None, system.s_mcts.V.copy(), system.b_mcts.V.copy(), None, None])
+        s_value = get_past_value(board, getStep(board), analist=1)
+        b_value = get_past_value(board, getStep(board), analist=-1)
+        memory[-1][3] = s_value
+        #print(memory[getStep(board)][3])
+        memory[-1][4] = b_value
+        simp = getMyImportance(board, getStep(board), analist=1)
+        
+        wimp = getMyImportance(board, getStep(board), analist=-1)
+        memory[-1][7] = simp
+        memory[-1][8] = wimp
+        '''
         top = np.where(board[:, action] != 0)[0][0]
         text[top][action] = 0
     else:
@@ -92,7 +105,7 @@ def update_board():
         s_value = get_past_value(board, getStep(board), analist=1)
         b_value = get_past_value(board, getStep(board), analist=-1)
         memory[-1][3] = s_value
-        print(memory[getStep(board)][3])
+        #print(memory[getStep(board)][3])
         memory[-1][4] = b_value
         simp = getMyImportance(board, getStep(board), analist=1)
         
@@ -123,6 +136,17 @@ def turn_of_AI():
     analist = data['analist']
     result = game.getGameEnded(board, -getCurrentPlayer(board))
     if result != 0:
+        memory.append([board.copy(), system.s_mcts.Nsa.copy(), system.b_mcts.Nsa.copy(), None, None, system.s_mcts.V.copy(), system.b_mcts.V.copy(), None, None])
+        s_value = get_past_value(board, getStep(board), analist=1)
+        b_value = get_past_value(board, getStep(board), analist=-1)
+        memory[-1][3] = s_value
+        #print(memory[getStep(board)][3])
+        memory[-1][4] = b_value
+        simp = getMyImportance(board, getStep(board), analist=1)
+        
+        wimp = getMyImportance(board, getStep(board), analist=-1)
+        memory[-1][7] = simp
+        memory[-1][8] = wimp
         next_board = game.getInitBoard()
         fatal = system.detectFatalStone(board)
         text = [[ -1 for _ in range(7)] for _ in range(6)]
@@ -182,7 +206,7 @@ def turn_of_AI():
         s_value = get_past_value(board, getStep(board), analist=1)
         b_value = get_past_value(board, getStep(board), analist=-1)
         memory[-1][3] = s_value
-        print(memory[getStep(board)][3])
+        #print(memory[getStep(board)][3])
         memory[-1][4] = b_value
         simp = getMyImportance(board, getStep(board), analist=1)
         
@@ -268,6 +292,7 @@ def forward_one():
     value = memory[getStep(fboard)][3] if analist == 1 else memory[getStep(fboard)][4]
 
     print(fboard, counts)
+    print(f"{bstep}->{bstep+1}")
     response_data = {
         'board': fboard.tolist(),
         'counts': counts,
@@ -292,7 +317,7 @@ def back_one():
     fboard = memory[bstep-1][0]
     counts = getPastCount(getStep(fboard), fboard, analist)
     value = memory[getStep(fboard)][3] if analist == 1 else memory[getStep(fboard)][4]
-    
+    print(f"{bstep}->{bstep+1}")
     print(fboard)
     response_data = {
         'board': fboard.tolist(),
@@ -469,7 +494,7 @@ def getImportance(board, step, analist, baseline=1):
     next_values.sort(reverse=True)
     if len(next_values) <= 1:
         return 0
-    print(next_values[:2])
+    #print(next_values[:2])
     if len(next_values) < baseline:
         return abs(next_values[0] - next_values[-1])
     else:
@@ -495,9 +520,11 @@ def getMyImportance(board, step, analist):
         next_values.sort(reverse=True)
         
         q3 = math.ceil(np.percentile([i for i in range(len(next_values))], 75))
+        #print(f"imp: {next_values}, {np.var(next_values[:q3])}")
         return np.var(next_values[:q3])
 
 def getPastValue(board, analist):
+    
     tmp = memory[getStep(board)]
     fboard, sNsa, bNsa, sv, bv, sVs, bVs, simp, wimp = tmp
     curPlayer = getCurrentPlayer(board)
@@ -539,9 +566,10 @@ def hot_traj(analist = 1):
     data = request.get_json()
     action = data['action']
     fboard = np.array(data['board'], dtype=np.int32)
-    bstep = getStep(fboard)
     analist = data['analist']
     limit = data ['limit']
+    bstep = getStep(fboard)
+    
     text = [[ -1 for _ in range(7)] for _ in range(6)]
     traj = [action]
     vboard, number = system.add_stone(fboard, getCurrentPlayer(fboard), traj[0], number=True)
@@ -574,20 +602,26 @@ def hot_traj(analist = 1):
     }
     return jsonify(response_data)
 
+def hot_traj_sub(fboard, action, analist, limit):
+    return None
+
+
 @app.route('/my_hot_traj', methods=['POST'])
 def my_hot_traj(analist = 1, mode="group", tail=3):
 
     action = -1
     data = request.get_json()
+    
     action = data['action']
     limit = data['limit']
     fboard = np.array(data['board'], dtype=np.int32)
-    bstep = getStep(fboard)
     analist = data['analist']
+    bstep = getStep(fboard)
+    
     #print(fboard)
     bstep = getStep(fboard)
     if action != -1:
-        print(action)
+        #print(action)
         traj = [action]
     else:
         traj = []
@@ -595,28 +629,13 @@ def my_hot_traj(analist = 1, mode="group", tail=3):
     value = get_past_value(vboard, bstep, analist)
     trajs, most_hot_trajs = my_hot_traj_sub(vboard, bstep, analist=analist, mode=mode, value=value) # 一手勝手に打ってるから
 
+    new_trajs = add_head(action, trajs)
+    most_hot_trajs = add_head(action, most_hot_trajs)
     #print(trajs)
-    new_trajs = []
-    if action != -1:
-        for i in range(len(trajs)):
-            tmp = [action]
-            t = trajs[i].copy()
-            print(t)
-            if t:
-                tmp.extend(t)
-                print(tmp)
-                tmp = np.array(tmp, dtype=np.int32).tolist()
-                new_trajs.append(tmp)
-        
-    else:
-        new_trajs = trajs.tolist()
+    
     #print(new_trajs) 
     min_traj = extract_min(most_hot_trajs)
-    if action != -1:
-        tmp = [action]
-        if min_traj != [-1]:
-            tmp.extend(min_traj)
-        min_traj = tmp
+    
 
 
     
@@ -657,6 +676,159 @@ def my_hot_traj(analist = 1, mode="group", tail=3):
     }
     return jsonify(response_data)
 
+def add_head(action, trajs):
+    new_trajs = []
+    if action != -1:
+        for i in range(len(trajs)):
+            tmp = [action]
+            t = trajs[i].copy()
+            #print(t)
+            if t:
+                tmp.extend(t)
+                #print(tmp)
+                tmp = np.array(tmp, dtype=np.int32).tolist()
+                new_trajs.append(tmp)
+        
+    else:
+        new_trajs = trajs.tolist()
+    
+    return new_trajs
+
+def ave_length(trajs):
+    if not trajs:
+        return 0
+    ave_l = 0
+    for t in trajs:
+        ave_l += len(t)
+    ave_l /= len(trajs)
+    return ave_l
+
+@app.route('/diff_traj_mode', methods=['POST'])
+def difference_traj_mode(analist = 1, mode="group", tail=3, step=2, baseline=4, threshold=4):
+    # 最も良い選択肢のgd2[0]を基準にし、そこからの近さを判断　二番目に良い手ですら　０とかやったらその手は一択系なんやと　どこかでガクッと変わるんやったらそこが重要
+        #　長さにも注目　4　短期か長期か　短期的なのは局所的　長期的な手は大局的 手数大差なかったらおなじようなもんとかんがえてよい
+        data = request.get_json()
+        method = data["method"]
+        
+        limit = data['limit']
+        fboard = np.array(data['board'], dtype=np.int32)
+        bstep = getStep(fboard)
+        
+        analist = data['analist']
+        value = get_past_value(fboard, bstep, analist)
+        my_imp = getMyImportance(fboard, bstep, analist)
+        imp = getImportance(fboard, bstep, analist)
+        valid = game.getValidMoves(fboard, getCurrentPlayer(fboard))
+        valid = [i  for i in range(len(valid)) if valid[i]]
+        #print(fpath, getStep(board))
+        counts = getPastCount(bstep, fboard, analist)
+        if sum(counts) == 0:
+            return None
+        #print(counts)
+        counts = np.argsort(np.array(counts)) #[1, 2, 3]
+        
+        counts = counts[::-1] #降順
+        long_flag = False
+        best = counts[0]
+        #一番良いパターンは短期型か長期型か
+        vboard, _ = game.getNextState(fboard.copy(), getCurrentPlayer(fboard), best)
+        svalue = get_past_value(vboard, bstep, analist)
+        if method == 1:
+            trajs, most_hot_trajs = my_hot_traj_sub(vboard, bstep, analist=analist, mode=mode, value=value) # 一手勝手に打ってるから
+        else:
+            rboard, _, most_hot_trajs = detectHotState(vboard, analist, bstep) # 一手勝手に打ってるから
+            most_hot_trajs = [most_hot_trajs]
+        most_hot_trajs = add_head(best, most_hot_trajs)
+        standard_trajs = most_hot_trajs.copy() #これが基準
+
+        save_l = ave_length(standard_trajs)
+        
+        if save_l > threshold:
+            long_flag = True
+        #短期＜ー＞長期　でガクッと下がる分岐を返す 
+        fatals = []
+        data = defaultdict(lambda:[])
+        # 長期、短期->value反対向き
+        ''' 
+        分類　同じ　同じ　0 ave_l=0の場合もここ
+        違う　同じ　１
+        同じ　違う　２
+        違う　違う　３
+        数字がでかいグループの方が優先度高い
+        同じグループの中で
+        '''
+
+        for c in counts:
+            if c == best or not c in valid:
+                continue
+            vboard, _ = game.getNextState(fboard.copy(), getCurrentPlayer(fboard), c)
+            value = get_past_value(vboard, bstep, analist)
+            trajs, most_hot_trajs = my_hot_traj_sub(vboard, bstep, analist=analist, mode=mode, value=value) # 一手勝手に打ってるから
+            most_hot_trajs = add_head(c, most_hot_trajs)
+            tmp = []
+            trajs = []
+            
+            ave_l = ave_length(most_hot_trajs)
+            tmp_l_flag = (ave_l > threshold)
+            tmp_l_flag = (long_flag != tmp_l_flag)
+            tmp_v_flag = (svalue * value < 0) #　違う方がTrue
+            label = 0
+            
+            if ave_l == 0 or (not tmp_l_flag and not tmp_v_flag):
+                l = 0
+            elif (tmp_l_flag and not tmp_v_flag):
+                l = 1
+            elif tmp_l_flag:
+                l = 2
+            else:
+                l = 3
+            data[l].append([c, most_hot_trajs, ave_l, value])
+        
+        exist = [i for i in range(4) if data[i]]
+        if not exist:
+            response_data = {
+            'best': int(best),
+            'compare': -1,
+            'strajs': standard_trajs,
+            'svalue': float(svalue),
+            'value': float(value),
+            'importance': float(imp),
+            'my_importance': float(my_imp),
+            }
+            return jsonify(response_data)
+
+        number = max(exist)
+        cdata = data[number].copy()
+        ls = np.array([abs(x[2] - save_l) for x in cdata])
+        #print(f"ls:{ls}")
+        compare = cdata[np.argmax(ls)]
+        print("compare", compare)
+        
+        ca, ctrajs, cave, cv = compare
+        print(ca, cave, cv)
+        print(best, ave_l, value)
+
+        print(best, ca)
+        response_data = {
+            'best': int(best),
+            'compare': int(ca),
+            'strajs': standard_trajs,
+            'ctrajs': ctrajs,
+            'svalue': float(svalue),
+            'cvalue': float(cv),
+            'value': float(value),
+            'importance': float(imp),
+            'my_importance': float(my_imp),
+        }
+        return jsonify(response_data)
+
+          
+            
+        
+        
+        
+
+      
 
 
 def extract_min(trajs):
@@ -701,7 +873,7 @@ def check_frequent_traj(fboard, analist=1, mode="group"):
     if not answer[key]:
         answer[key] = hot_states_one_way(fboard.copy(), analist=analist, step=4, baseline=2, fix=-1, value=None)
     bfcount, bfdcount, new_trajs, gs4, gd2, groups, visual = answer[key]
-    print(gd2)
+    #print(gd2)
     groups = dict(groups)
     
     traj = []
@@ -751,7 +923,7 @@ def check_convergence(boards, reach, bstep,  analist, btraj=None, value=None):
 
     for b in boards:
         group, stones, traj = check_convergence_per_board(b, reach, bstep, analist, value=value)
-        print(group, traj)
+        #print(group, traj)
         if btraj[index]:
             if traj:
                 btraj[index].extend(traj)
@@ -784,7 +956,7 @@ def check_convergence(boards, reach, bstep,  analist, btraj=None, value=None):
     else:
         gs4 = [gs_sorted[i][0] for i in range(4)]
     gd_sorted = sorted(dict(gd).items(), reverse=True, key=lambda x : x[1])
-    print(gd_sorted)
+    #print(gd_sorted)
     if len(gd_sorted) < 2:
         gd2 = [gd_sorted[i][0] for i in range(len(gd_sorted))]
     else:
@@ -806,16 +978,16 @@ def check_convergence(boards, reach, bstep,  analist, btraj=None, value=None):
                 if set(r).issubset(set(g)):
                     bfcount = 1
     
-    print( bfcount, bfdcount, trajs, gs4, gd2, groups, visual)
+    #print( bfcount, bfdcount, trajs, gs4, gd2, groups, visual)
     return bfcount, bfdcount, trajs, gs4, gd2, groups, visual
 
 def check_convergence_per_board(board, reach, bstep, analist, value=None):
         bcount = 0
         bfcount = 0
         bfdcount = 0
-        print(board)
+        #print(board)
         hot = detectHotState(board.copy(), analist, bstep) # mode=traj, toend=True
-        print(hot)
+        #print(hot)
         #print(hot[1])
         if hot[1] == None:
             return None, None, None
@@ -827,7 +999,7 @@ def check_convergence_per_board(board, reach, bstep, analist, value=None):
         if value:
             value = -value * getCurrentPlayer(memory[bstep][0])
             end_value = end * getCurrentPlayer(hot[0])
-            print(value, end_value)
+            #print(value, end_value)
             if value * end_value < 0:
                 # 勝敗が逆
                 return None, None, None
@@ -1031,7 +1203,7 @@ def hot_vector_one_way(fboard,  analist=1, step=2, baseline=4, fix=-1):
     #　このmetricはvec方向あり
     
     metric = vector * distance
-    print(vector, distance, metric)
+    #print(vector, distance, metric)
 
     return vector, distance, metric
 
@@ -1109,7 +1281,7 @@ def detectHotState(board, analist, step, neuro=True):
                 a = 1
                 action = p[-a]
                 while valids[action] == 0:
-                    print("loop")
+                    #print("loop")
                     a -= 1
                     if a <= -7:
                         result = (vboard, None, traj)
@@ -1119,7 +1291,7 @@ def detectHotState(board, analist, step, neuro=True):
                 action = np.argmax(counts)
             
             if valids[action] == 0:
-                print("not valid")
+                #print("not valid")
                 result = (vboard, None, traj)
                 return result
             
@@ -1158,7 +1330,7 @@ def detectHotState(board, analist, step, neuro=True):
             
             
             vboard = vnextBoard
-            print(vboard)
+            #print(vboard)
 
 def detect_relative_distance(pa, ca, limit=3):
         '''
