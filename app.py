@@ -477,6 +477,31 @@ def get_valids():
     }
     return jsonify(response_data)
 
+def extract_traj_tail(trajs, threshold=3):
+    tails = []
+    group = defaultdict(lambda: [])
+    
+    for traj in trajs:
+        flag = True
+        tail = traj[-threshold: ]
+        group[str(tail)].append(traj)
+    
+    
+
+    
+    group = dict(group)
+    gd_sorted = sorted(dict(group).items(), reverse=True, key=lambda x : len(x[1]))
+    print(gd_sorted)
+    major = gd_sorted[0][1]
+    i = 1
+    while len(major) < 3 and len(gd_sorted) > i:
+        major.extend(gd_sorted[i][1])
+        i += 1
+    #print(len(trajs), len(tails)/len(trajs))
+    print("tail", gd_sorted[0][0], gd_sorted[0][1])
+    return major
+
+
 def getImportance(board, step, analist, baseline=1):
     player = getCurrentPlayer(board)
     valids = game.getValidMoves(board, player)
@@ -634,12 +659,13 @@ def my_hot_traj(analist = 1, mode="group", tail=3):
     #print(trajs)
     
     #print(new_trajs) 
-    min_traj = extract_min(most_hot_trajs)
-    
+    #min_traj = extract_min(most_hot_trajs)
+    new_trajs = extract_traj_tail(new_trajs)
 
 
     
-    traj = min_traj
+    #traj = min_traj
+    traj = new_trajs[0]
     #print(traj)
     vboard = fboard.copy()
     text = [[ -1 for _ in range(7)] for _ in range(6)]

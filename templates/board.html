@@ -39,12 +39,12 @@
         var trajs = [];
         var analist = -1;
         var name = 22; // 被験者idを入れてください
-        var day = 2; // 練習何日目か
+        var day = 1; // 練習何日目か
         var turns = [0, 0, -1]; //先番固定　1が強いAI、−１が弱いAI,[先番, 0, 後ろ番]の順
-        var method = [2, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
+        var method = [1, 1]; // 1が奇数[1, 1]　2が偶数[2, 1]
 
         var limit = 5;
-        // limits = [3, 5, 7, 100]
+        // limits = [1, 2, 3, 4, 5]
         var times = [];
         var choices = [];
         var player = 1;
@@ -112,6 +112,7 @@
         }
         function set_player(){
             player = 1
+            limit = name / 2
             /*
             if( (name%4==1) || (name%4==2)){
                 turns[2] = 1
@@ -613,7 +614,7 @@
                     if(i==0){
                         label = "best: " + String(action+1);
                     }else{
-                        label = "worst: " + String(action+1);
+                        label = "compare: " + String(action+1);
                     }
                     
                    
@@ -764,7 +765,7 @@
                 }else{
                     turn = -1
                 }
-                tmessage =  " value: " +  String(turn*curPlayer*data.value)
+                tmessage =  message + "->" +  String(turn*curPlayer*data.value)
                 showMessage(tmessage);
                 
 
@@ -799,7 +800,7 @@
                 }else{
                     turn = -1
                 }
-                tmessage =  " value: " +  String(turn*curPlayer*data.value)
+                tmessage =  message+ "->" +  String(turn*curPlayer*data.value)
                 showMessage(tmessage);
                 renderTraj(fboard, text, fatal, tail, cell_class, win);
                 
@@ -901,9 +902,10 @@
                 cfatal = null;
                 EndFeedback()
                 createButton("<<", backOne);
-                createButton(">>", forwardOne);                
+                createButton(">>", forwardOne); 
+                            
                 
-                createButton("traj&value", diffTrajMode);
+                
                 //createButton("traj", startTrajMode);
                 //createButton("vec", showVec);
                 /*
@@ -913,6 +915,11 @@
                     createButton("map", saliency_map);
                 }*/
                 board = data['board']
+                turn = getStep(board)
+                if(turn%2 == 1){
+                    createButton("traj&value", diffTrajMode);
+                }  
+                
                 counts = data['counts']
                 value = data['value']
                 renderBoard(board, cell_class)
@@ -951,11 +958,12 @@
                 
                 flag = false
             }
-            
+            removeVague("traj&value")
             endTrajs();
             removeVague("best");
             removeVague("compare");
             removeVague("worst");
+            
             
         }
 
@@ -1018,6 +1026,12 @@
                 board = data.board; // サーバーからのデータでboard変数を更新
                 counts = data.counts;
                 renderBoard(board, cell_class); // ボードを再描画
+                turn = getStep(board)
+                if(turn%2 == 1){
+                    createButton("traj&value", diffTrajMode);
+                }else{
+                    removeVague("traj&value")
+                }
                 showMessage("")
                 
                
@@ -1043,6 +1057,12 @@
                 counts = data.counts;
                 renderBoard(board, cell_class); // ボードを再描画
                 showMessage("")
+                turn = getStep(board)
+                if(turn%2 == 1){
+                    createButton("traj&value", diffTrajMode);
+                }else{
+                    removeVague("traj&value")
+                }
               
                
                 //startTrajMode()
